@@ -1,0 +1,94 @@
+# Fork-only workflow: builds the Gluten + Bolt dev/build toolchain image
+# (dev/docker/Dockerfile.ubuntu22-bolt) and pushes it to GitHub Container Registry,
+# so it can be pulled on a beefy machine to run `make bolt-recipe && make release`.
+#
+# The image is a BUILD toolchain (gcc-12, cmake, maven, JDK 17, conan, spark test deps).
+# It does NOT contain Gluten, Bolt or a runnable Spark.
+
+name: Build and Push Bolt Dev Image (GHCR)
+
+on:
+  workflow_dispatch:
+    inputs:
+      extra_tag:
+        description: 'Optional extra tag (e.g. v1)'
+        required: false
+        default: ''
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/docker_image_bolt_ghcr.yml'
+      - '.github/workflows/util/install-spark-resources.sh'
+      - 'dev/docker/Dockerfile.ubuntu22-bolt'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: gluten-bolt-dev
+
+jobs:
+  build-and-push:
+    # Never run on upstream; this is for forks only.
+    if: ${{ !startsWith(github.repository, 'apache/') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h /
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # GHCR image names must be lowercase.
+      - name: Compute image ref
+        id: ref
+        run: |
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          echo "image=${REGISTRY}/${owner}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c
+
+      - name: Login to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build tag list
+        id: tags
+        run: |
+          image='${{ steps.ref.outputs.image }}'
+          tags="${image}:ubuntu22-bolt
+          ${image}:ubuntu22-bolt-${GITHUB_SHA::7}"
+          extra='${{ inputs.extra_tag }}'
+          if [ -n "$extra" ]; then tags="${tags}
+          ${image}:${extra}"; fi
+          {
+            echo 'list<<EOF'
+            echo "$tags"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # Build context is the repo root: the Dockerfile COPYs
+      # .github/workflows/util/install-spark-resources.sh.
+      - name: Build and push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: .
+          file: dev/docker/Dockerfile.ubuntu22-bolt
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.list }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
