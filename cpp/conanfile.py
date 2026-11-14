@@ -32,6 +32,7 @@ class GlutenConan(ConanFile):
         "with_parquet": [True, False],
         "enable_hdfs": [True, False],
         "enable_s3": [True, False],
+        "enable_gcs": [True, False],
         "enable_asan": [True, False],
         "build_benchmarks": [True, False],
         "build_tests": [True, False],
@@ -43,6 +44,7 @@ class GlutenConan(ConanFile):
         "with_parquet": True,
         "enable_hdfs": True,
         "enable_s3": False,
+        "enable_gcs": False,
         "enable_asan": False,
         "build_benchmarks": False,
         "build_tests": False,
@@ -113,6 +115,7 @@ class GlutenConan(ConanFile):
         self.options[bolt].spark_compatible = True
         self.options[bolt].enable_hdfs = self.options.enable_hdfs
         self.options[bolt].enable_s3 = self.options.enable_s3
+        self.options[bolt].enable_gcs = self.options.enable_gcs
 
         self.options[bolt].enable_asan = self.options.enable_asan
 
@@ -159,6 +162,7 @@ class GlutenConan(ConanFile):
 
         tc.cache_variables["ENABLE_HDFS"] = "ON" if self.options.enable_hdfs else "OFF"
         tc.cache_variables["ENABLE_S3"] = "ON" if self.options.enable_s3 else "OFF"
+        tc.cache_variables["ENABLE_GCS"] = "ON" if self.options.enable_gcs else "OFF"
 
         tc.cache_variables["BUILD_BENCHMARKS"] = self.options.build_benchmarks
         tc.cache_variables["BUILD_TESTS"] = self.options.build_tests

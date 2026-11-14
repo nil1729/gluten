@@ -33,6 +33,7 @@ BUILD_CHANNEL ?=
 
 ENABLE_HDFS ?= True
 ENABLE_S3 ?= False
+ENABLE_GCS ?= True
 RSS_PROFILE ?= ''
 
 ifeq ($(BUILD_BENCHMARKS),True)
@@ -97,6 +98,7 @@ build:
 	ALL_CONAN_OPTIONS=" -o gluten/*:shared=${SHARED_LIBRARY} \
 			-o gluten/*:enable_hdfs=${ENABLE_HDFS} \
 			-o gluten/*:enable_s3=${ENABLE_S3} \
+			-o gluten/*:enable_gcs=${ENABLE_GCS} \
 			-o gluten/*:enable_asan=${ENABLE_ASAN} \
 			-o gluten/*:build_benchmarks=${BUILD_BENCHMARKS} \
 			-o gluten/*:build_tests=${BUILD_TESTS} \
