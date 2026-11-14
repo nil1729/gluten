@@ -48,8 +48,12 @@ class BoltParquetDataSourceABFS final : public BoltParquetDataSource {
         FileSystemType::kAbfs);
     auto fileSystem = filesystems::getFileSystem(filePath_, hiveConf);
     auto* abfsFileSystem = dynamic_cast<filesystems::AbfsFileSystem*>(fileSystem.get());
+    // FileOptions is {values, fileSize, pool, ...}; set the pool by name instead of positionally
+    // ({{}, pool} would initialise fileSize with a pointer).
+    filesystems::FileOptions options;
+    options.pool = sinkPool_.get();
     sink_ = std::make_unique<dwio::common::WriteFileSink>(
-        abfsFileSystem->openFileForWrite(filePath_, {{}, sinkPool_.get()}), filePath_);
+        abfsFileSystem->openFileForWrite(filePath_, options), filePath_);
   }
 };
 

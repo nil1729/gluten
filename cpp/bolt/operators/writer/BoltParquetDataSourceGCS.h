@@ -45,8 +45,12 @@ class BoltParquetDataSourceGCS final : public BoltParquetDataSource {
   void initSink(const std::unordered_map<std::string, std::string>& /* sparkConfs */) override {
     auto fileSystem = filesystems::getFileSystem(filePath_, nullptr);
     auto* gcsFileSystem = dynamic_cast<filesystems::GcsFileSystem*>(fileSystem.get());
+    // FileOptions is {values, fileSize, pool, ...}; set the pool by name instead of positionally
+    // ({{}, pool} would initialise fileSize with a pointer).
+    filesystems::FileOptions options;
+    options.pool = sinkPool_.get();
     sink_ = std::make_unique<dwio::common::WriteFileSink>(
-        gcsFileSystem->openFileForWrite(filePath_, {{}, sinkPool_.get()}), filePath_);
+        gcsFileSystem->openFileForWrite(filePath_, options), filePath_);
   }
 };
 
