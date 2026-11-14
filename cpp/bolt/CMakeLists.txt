@@ -77,7 +77,13 @@ macro(find_awssdk)
 endmacro()
 
 macro(find_gcssdk)
-  find_package(google_cloud_cpp_storage CONFIG 2.22.0 REQUIRED)
+  # Conan's CMakeDeps generates google-cloud-cpp-config.cmake (targets
+  # google-cloud-cpp::storage); upstream/vcpkg installs ship
+  # google_cloud_cpp_storage-config.cmake instead. Accept either.
+  find_package(google-cloud-cpp 2.22.0 CONFIG QUIET)
+  if(NOT google-cloud-cpp_FOUND)
+    find_package(google_cloud_cpp_storage CONFIG 2.22.0 REQUIRED)
+  endif()
 endmacro()
 
 macro(find_azure)

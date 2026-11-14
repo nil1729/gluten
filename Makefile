@@ -89,6 +89,7 @@ bolt-recipe:
 	rm -rf ep/bolt
 	git clone --depth=1 --branch ${BOLT_BUILD_VERSION} https://github.com/bytedance/bolt.git ep/bolt &&\
     bash ep/bolt/scripts/install-bolt-deps.sh && \
+    python3 dev/patch-bolt-recipe.py ep/bolt/conanfile.py && \
     conan export ep/bolt/conanfile.py --name=bolt --version=${BOLT_BUILD_VERSION} --user=${BUILD_USER} --channel=${BUILD_CHANNEL}
 	@echo "Bolt recipe has been installed"
 
